@@ -2,10 +2,10 @@ import java.util.*;
 
 public class Restaurant {
 
-    ArrayList<MenuItem> menu;
-    LinkedList<Order> kitchenQueue;
-    HashMap<Integer,Order> orders;
-    LinkedHashMap<Integer, Order> completedOrders;
+    List<MenuItem> menu;
+    Queue<Order> kitchenQueue;
+    Map<Integer,Order> orders;
+    Map<Integer, Order> completedOrders;
 
     public Restaurant() {
         this.menu = new ArrayList<>();
@@ -14,32 +14,68 @@ public class Restaurant {
         this.completedOrders = new LinkedHashMap<>();
     }
 
-    public void addMenuItem(Scanner scanner) {
-        String itemName = "";
-        do {
-            System.out.println("Enter the item name: ");
-            itemName = scanner.nextLine();
-        } while (itemName.trim().isEmpty());
-
-        double price = 0.0;
-        do {
-            if (price < 0.0) {
-                System.out.println("Invalid input. Please enter a positive number.");
-            }
-            System.out.println("Enter the price of the item: ");
+    private int readPositiveInt(Scanner scanner, String message) {
+        while (true) {
+            System.out.println(message);
             try {
-                price = Double.parseDouble(scanner.nextLine());
+                int value = Integer.parseInt(scanner.nextLine());
+                if (value > 0) {
+                    return value;
+                }
+                System.out.println("Invalid input. Please enter a positive number.");
             } catch (NumberFormatException e) {
-                price = 0.0;
                 System.out.println("Invalid input. Please enter a number.");
             }
-        } while (price <= 0.0);
+        }
+    }
 
-        String category = "";
-        do {
-            System.out.println("Enter the category of the item: ");
-            category = scanner.nextLine();
-        } while (category.trim().isEmpty());
+    private int readIntBetweenRange(Scanner scanner, String message, int start, int end) {
+        while (true) {
+            System.out.println(message);
+            try {
+                int value = Integer.parseInt(scanner.nextLine());
+                if (value >= start && value <= end) {
+                    return value;
+                }
+                System.out.println("Invalid input. Please enter a number in the range [" + start + "->" + end + "]");
+            } catch (NumberFormatException e) {
+                System.out.println("Invalid input. Please enter a number.");
+            }
+        }
+    }
+
+    private double readPositiveDouble(Scanner scanner, String message) {
+        while (true) {
+            System.out.println(message);
+            try {
+                double value = Double.parseDouble(scanner.nextLine());
+                if (value > 0) {
+                    return value;
+                }
+                System.out.println("Invalid input. Please enter a positive number.");
+            } catch (NumberFormatException e) {
+                System.out.println("Invalid input. Please enter a number.");
+            }
+        }
+    }
+
+    private String readNonEmptyString(Scanner scanner, String message) {
+        while(true) {
+            System.out.println(message);
+            String value = scanner.nextLine();
+            if(!value.trim().isEmpty()) {
+                return value;
+            }
+            System.out.println("The string cannot be empty.");
+        }
+    }
+
+    public void addMenuItem(Scanner scanner) {
+        String itemName = readNonEmptyString(scanner, "Enter the item's name: ");
+
+        double price = readPositiveDouble(scanner, "Enter the price of the item: ");
+
+        String category = readNonEmptyString(scanner, "Enter the category of the item: ");
 
         MenuItem menuItem = new MenuItem(itemName, price, category);
         this.menu.add(menuItem);
@@ -50,27 +86,19 @@ public class Restaurant {
         if (menu.isEmpty()) {
             System.out.println("No items in the menu to remove.");
         } else {
-            int id = 0;
-            do {
-                if (id < 0) {
-                    System.out.println("Invalid input. Please enter a positive number.");
-                }
-                System.out.println("Enter the item id: ");
-                try {
-                    id = Integer.parseInt(scanner.nextLine());
-                } catch (NumberFormatException e) {
-                    id = 0;
-                    System.out.println("Invalid input. Please enter a number.");
-                }
-            } while (id <= 0);
+            int id = readPositiveInt(scanner, "Enter the ID of the item.");
 
-            for (MenuItem item : menu) {
-                if (item.getId() == id) {
-                    menu.remove(item);
-                    System.out.println("Item removed from menu Successfully");
+            Iterator<MenuItem> iterator = menu.iterator();
+            while (iterator.hasNext()) {
+                MenuItem item = iterator.next();
+
+                if (item.id() == id) {
+                    iterator.remove();
+                    System.out.println("Item removed from menu successfully");
                     return;
                 }
             }
+
             System.out.println("Item not found in the menu.");
         }
     }
@@ -80,28 +108,14 @@ public class Restaurant {
             System.out.println("No items in the menu yet.");
         } else {
             System.out.println("Menu:");
-            for (MenuItem menuItem : menu) {
-                System.out.println("\t" + menuItem);
-            }
+            menu.forEach(item -> System.out.println("\t" + item));
         }
     }
 
     public void searchMenuItem(Scanner scanner) {
-        int id = 0;
-        do {
-            if (id < 0) {
-                System.out.println("Invalid input. Please enter a positive number.");
-            }
-            System.out.println("Enter the item id: ");
-            try {
-                id = Integer.parseInt(scanner.nextLine());
-            } catch (NumberFormatException e) {
-                id = 0;
-                System.out.println("Invalid input. Please enter a number.");
-            }
-        } while (id <= 0);
+        int id = readPositiveInt(scanner, "Enter the ID of the item: ");
         for (MenuItem item : menu) {
-            if (item.getId() == id) {
+            if (item.id() == id) {
                 System.out.println("Item found!");
                 System.out.println(item);
                 return;
@@ -111,12 +125,7 @@ public class Restaurant {
     }
 
     public void createOrder(Scanner scanner) {
-        String customerName = "";
-        do {
-            System.out.println("Enter the customer name: ");
-            customerName = scanner.nextLine();
-        } while (customerName.trim().isEmpty());
-
+        String customerName = readNonEmptyString(scanner, "Enter the name of the customer: ");
         Order order = new Order(customerName);
         orders.put(order.getOrderId(), order);
         System.out.println("Order created successfully.\tOrder ID: " + order.getOrderId());
@@ -128,38 +137,14 @@ public class Restaurant {
         } else if (menu.isEmpty()) {
             System.out.println("No items in the menu to add.");
         } else {
-            int orderId = 1;
-            do {
-                if (orderId <= 0) {
-                    System.out.println("Invalid input. Please enter a positive number.");
-                }
-                System.out.println("Enter the order ID: ");
-                try {
-                    orderId = Integer.parseInt(scanner.nextLine());
-                } catch (NumberFormatException e) {
-                    orderId = 0;
-                    System.out.println("Invalid input. Please enter a number.");
-                }
-            } while (orderId <= 0);
+            int orderId = readPositiveInt(scanner, "Enter the order ID: ");
 
             if (orders.containsKey(orderId)) {
                 Order order = orders.get(orderId);
-                int itemId = 1;
-                do {
-                    if (itemId <= 0) {
-                        System.out.println("Invalid input. Please enter a positive number.");
-                    }
-                    System.out.println("Enter the item ID: ");
-                    try {
-                        itemId = Integer.parseInt(scanner.nextLine());
-                    } catch (NumberFormatException e) {
-                        itemId = 0;
-                        System.out.println("Invalid input. Please enter a number.");
-                    }
-                } while (itemId <= 0);
+                int itemId = readPositiveInt(scanner, "Enter the item ID: ");
                 MenuItem menuItem = null;
                 for (MenuItem item : menu) {
-                    if (item.getId() == itemId) {
+                    if (item.id() == itemId) {
                         menuItem = item;
                         break;
                     }
@@ -167,19 +152,7 @@ public class Restaurant {
                 if (menuItem == null) {
                     System.out.println("Item not found in the menu.");
                 } else {
-                    int quantity = 1;
-                    do {
-                        if (quantity <= 0) {
-                            System.out.println("Invalid input. Please enter a positive number.");
-                        }
-                        System.out.println("Enter the quantity: ");
-                        try {
-                            quantity = Integer.parseInt(scanner.nextLine());
-                        } catch (NumberFormatException e) {
-                            quantity = 0;
-                            System.out.println("Invalid input. Please enter a number.");
-                        }
-                    } while (quantity <= 0);
+                    int quantity = readPositiveInt(scanner, "Enter the quantity: ");
                     order.addItem(new OrderItem(menuItem, quantity));
                 }
             } else {
@@ -192,38 +165,14 @@ public class Restaurant {
         if (orders.isEmpty()) {
             System.out.println("No orders available.");
         } else {
-            int orderId = 1;
-            do {
-                if (orderId <= 0) {
-                    System.out.println("Invalid input. Please enter a positive number.");
-                }
-                System.out.println("Enter the order ID: ");
-                try {
-                    orderId = Integer.parseInt(scanner.nextLine());
-                } catch (NumberFormatException e) {
-                    orderId = 0;
-                    System.out.println("Invalid input. Please enter a number.");
-                }
-            } while (orderId <= 0);
+            int orderId = readPositiveInt(scanner, "Enter the order ID: ");
 
             if (orders.containsKey(orderId)) {
                 Order order = orders.get(orderId);
-                int itemId = 1;
-                do {
-                    if (itemId <= 0) {
-                        System.out.println("Invalid input. Please enter a positive number.");
-                    }
-                    System.out.println("Enter the item ID: ");
-                    try {
-                        itemId = Integer.parseInt(scanner.nextLine());
-                    } catch (NumberFormatException e) {
-                        itemId = 0;
-                        System.out.println("Invalid input. Please enter a number.");
-                    }
-                } while (itemId <= 0);
+                int itemId = readPositiveInt(scanner, "Enter the item ID: ");
 
                 for (OrderItem orderItem : order.getOrderItems()) {
-                    if (orderItem.getMenuItem().getId() == itemId) {
+                    if (orderItem.menuItem().id() == itemId) {
                         order.removeItem(orderItem);
                         return;
                     }
@@ -236,19 +185,7 @@ public class Restaurant {
     }
 
     public void displayOrder(Scanner scanner) {
-        int orderId = 1;
-        do {
-            if (orderId <= 0) {
-                System.out.println("Invalid input. Please enter a positive number.");
-            }
-            System.out.println("Please enter the order ID: ");
-            try {
-                orderId = Integer.parseInt(scanner.nextLine());
-            } catch (NumberFormatException e) {
-                orderId = 0;
-                System.out.println("Invalid input. Please enter a number.");
-            }
-        } while (orderId <= 0);
+        int orderId = readPositiveInt(scanner, "Enter the order ID: ");
 
         if (orders.containsKey(orderId)) {
             Order order = orders.get(orderId);
@@ -259,19 +196,7 @@ public class Restaurant {
     }
 
     public void addOrderToKitchenQueue(Scanner scanner) {
-        int orderId = 1;
-        do {
-            if (orderId <= 0) {
-                System.out.println("Invalid input. Please enter a positive number.");
-            }
-            System.out.println("Please enter the order ID: ");
-            try {
-                orderId = Integer.parseInt(scanner.nextLine());
-            } catch (NumberFormatException e) {
-                orderId = 0;
-                System.out.println("Invalid input. Please enter a number.");
-            }
-        } while (orderId <= 0);
+        int orderId = readPositiveInt(scanner, "Enter the order ID: ");
 
         if (orders.containsKey(orderId)) {
             Order order = orders.get(orderId);
@@ -297,19 +222,7 @@ public class Restaurant {
     }
 
     public void searchOrder(Scanner scanner) {
-        int orderId = 1;
-        do {
-            if (orderId <= 0) {
-                System.out.println("Invalid input. Please enter a positive number.");
-            }
-            System.out.println("Please enter the order ID: ");
-            try {
-                orderId = Integer.parseInt(scanner.nextLine());
-            } catch (NumberFormatException e) {
-                orderId = 0;
-                System.out.println("Invalid input. Please enter a number.");
-            }
-        } while (orderId <= 0);
+        int orderId = readPositiveInt(scanner, "Enter the order ID: ");
 
         if (orders.containsKey(orderId)) {
             orders.get(orderId).displayOrder();
@@ -319,19 +232,7 @@ public class Restaurant {
     }
 
     public void checkOrderStatus(Scanner scanner) {
-        int orderId = 1;
-        do {
-            if (orderId <= 0) {
-                System.out.println("Invalid input. Please enter a positive number.");
-            }
-            System.out.println("Please enter the order ID: ");
-            try {
-                orderId = Integer.parseInt(scanner.nextLine());
-            } catch (NumberFormatException e) {
-                orderId = 0;
-                System.out.println("Invalid input. Please enter a number.");
-            }
-        } while (orderId <= 0);
+        int orderId = readPositiveInt(scanner, "Enter the order ID: ");
 
         if (orders.containsKey(orderId)) {
             System.out.println("Order Status: " + orders.get(orderId).getOrderStatus());
@@ -340,7 +241,7 @@ public class Restaurant {
         }
     }
 
-    public void displayCompletedOrders(Scanner scanner) {
+    public void displayCompletedOrders() {
         if (completedOrders.isEmpty()) {
             System.out.println("No orders have been completed yet.");
         } else {
@@ -354,19 +255,7 @@ public class Restaurant {
     }
 
     public void cancelOrder(Scanner scanner) {
-        int orderId = 1;
-        do {
-            if (orderId <= 0) {
-                System.out.println("Invalid input. Please enter a positive number.");
-            }
-            System.out.println("Please enter the order ID: ");
-            try {
-                orderId = Integer.parseInt(scanner.nextLine());
-            } catch (NumberFormatException e) {
-                orderId = 0;
-                System.out.println("Invalid input. Please enter a number.");
-            }
-        } while (orderId <= 0);
+        int orderId = readPositiveInt(scanner, "Enter the order ID: ");
 
         if (orders.containsKey(orderId)) {
             orders.get(orderId).cancelOrder();
@@ -376,19 +265,7 @@ public class Restaurant {
     }
 
     public void calculateTotal(Scanner scanner) {
-        int orderId = 1;
-        do {
-            if (orderId <= 0) {
-                System.out.println("Invalid input. Please enter a positive number.");
-            }
-            System.out.println("Please enter the order ID: ");
-            try {
-                orderId = Integer.parseInt(scanner.nextLine());
-            } catch (NumberFormatException e) {
-                orderId = 0;
-                System.out.println("Invalid input. Please enter a number.");
-            }
-        } while (orderId <= 0);
+        int orderId = readPositiveInt(scanner, "Enter the order ID: ");
 
         if (orders.containsKey(orderId)) {
             System.out.println("Total: " + orders.get(orderId).calculateTotal());
@@ -419,22 +296,12 @@ public class Restaurant {
     }
 
     public void run() {
-        int choice = 1;
+        int choice;
         Scanner scanner = new Scanner(System.in);
         do {
             printAppMenu();
 
-            do {
-                if (choice < 1 || choice > 16) {
-                    System.out.println("Invalid choice. Please try again.");
-                }
-                try {
-                    choice = Integer.parseInt(scanner.nextLine());
-                } catch (NumberFormatException e) {
-                    choice = 0;
-                    System.out.println("Invalid input. Please enter a number.");
-                }
-            } while (choice < 1 || choice > 16);
+            choice = readIntBetweenRange(scanner, "Enter your choice of service: ", 1, 16);
 
             switch (choice) {
                 case 1 -> addMenuItem(scanner);
@@ -449,7 +316,7 @@ public class Restaurant {
                 case 10 -> processNextOrder();
                 case 11 -> searchOrder(scanner);
                 case 12 -> checkOrderStatus(scanner);
-                case 13 -> displayCompletedOrders(scanner);
+                case 13 -> displayCompletedOrders();
                 case 14 -> cancelOrder(scanner);
                 case 15 -> calculateTotal(scanner);
                 case 16 -> System.out.println("Thank you for using the Restaurant Order Manager.");

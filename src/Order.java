@@ -1,11 +1,11 @@
 import java.util.ArrayList;
+import java.util.List;
 
 public class Order {
 
-    private int orderId;
-    private String customerName;
-    private ArrayList<OrderItem> orderItems;
-    private double total;
+    private final int orderId;
+    private final String customerName;
+    private final List<OrderItem> orderItems;
     private OrderStatus orderStatus;
     private static int nextId = 1;
 
@@ -14,7 +14,6 @@ public class Order {
         this.orderId = nextId;
         nextId++;
         this.orderItems = new ArrayList<>();
-        this.total = 0.0;
         this.orderStatus = OrderStatus.PENDING;
     }
 
@@ -26,30 +25,32 @@ public class Order {
         return customerName;
     }
 
-    public ArrayList<OrderItem> getOrderItems() {
-        return orderItems;
+    public List<OrderItem> getOrderItems() {
+        return List.copyOf(orderItems);
     }
 
     public OrderStatus getOrderStatus() {
         return orderStatus;
     }
 
+    private boolean isEditable() {
+        return this.orderStatus == OrderStatus.PENDING || this.orderStatus == OrderStatus.IN_KITCHEN;
+    }
+
     public void addItem(OrderItem orderItem) {
-        if (this.orderStatus == OrderStatus.PENDING || this.orderStatus == OrderStatus.IN_KITCHEN) {
+        if (isEditable()) {
             this.orderItems.add(orderItem);
-            this.total += orderItem.calculateSubTotal();
-            System.out.println("Item added to order: " + orderItem.getMenuItem().getName() + " (" + orderItem.getQuantity() + "x)");
+            System.out.println("Item added to order: " + orderItem.menuItem().name() + " (" + orderItem.quantity() + "x)");
         } else {
             System.out.println("Cannot add items to completed or cancelled order.");
         }
     }
 
     public void removeItem(OrderItem orderItem) {
-        if (this.orderStatus == OrderStatus.PENDING || this.orderStatus == OrderStatus.IN_KITCHEN) {
+        if (isEditable()) {
             if(orderItems.contains(orderItem)) {
                 this.orderItems.remove(orderItem);
-                this.total -= orderItem.calculateSubTotal();
-                System.out.println("Item removed from order: " + orderItem.getMenuItem().getName() + " (" + orderItem.getQuantity() + "x)");
+                System.out.println("Item removed from order: " + orderItem.menuItem().name() + " (" + orderItem.quantity() + "x)");
             } else {
                 System.out.println("Order does not contain this item.");
             }
@@ -59,7 +60,7 @@ public class Order {
     }
 
     public double calculateTotal() {
-        return this.total;
+        return orderItems.stream().mapToDouble(OrderItem::calculateSubTotal).sum();
     }
 
     public void displayOrder() {
@@ -70,43 +71,41 @@ public class Order {
             for (OrderItem orderItem : this.orderItems) {
                 System.out.println("\t" + orderItem);
             }
+            orderItems.forEach(item -> System.out.println("\t" + item));
         }
-        System.out.println("Total: " + this.total);
+        System.out.println("Total: " + this.calculateTotal());
     }
 
     public boolean prepareOrder() {
-        boolean isSuccessful = false;
         if (this.orderStatus == OrderStatus.PENDING) {
             this.orderStatus = OrderStatus.IN_KITCHEN;
             System.out.println("Order is being prepared.");
-            isSuccessful = true;
+            return true;
         } else {
             System.out.println("Order cannot be prepared as the order is " + this.orderStatus);
+            return false;
         }
-        return isSuccessful;
     }
 
     public boolean completeOrder() {
-        boolean isSuccessful = false;
         if (this.orderStatus == OrderStatus.IN_KITCHEN) {
             this.orderStatus = OrderStatus.COMPLETED;
             System.out.println("Order is completed.");
-            isSuccessful = true;
+            return true;
         } else {
             System.out.println("Order cannot be completed as the order is " + this.orderStatus);
+            return false;
         }
-        return isSuccessful;
     }
 
     public boolean cancelOrder() {
-        boolean isSuccessful = false;
         if (this.orderStatus == OrderStatus.COMPLETED) {
             System.out.println("Order cannot be cancelled as the order is already completed");
-            isSuccessful = true;
+            return false;
         } else {
             this.orderStatus = OrderStatus.CANCELLED;
             System.out.println("Order is cancelled.");
+            return true;
         }
-        return isSuccessful;
     }
 }
